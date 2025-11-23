@@ -34,6 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     needs: []
+    # Aquí está la configuración correcta del servicio
     services:
       postgres:
         image: postgres:15
@@ -77,15 +78,3 @@ jobs:
       - name: Run full test suite
         working-directory: backend
         run: npm run test
-services:
-  postgres:
-    image: postgres:15
-    env:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: nuevo_proyecto_test
-    options: >-
-      --health-cmd pg_isready -U postgres
-      --health-interval 10s
-      --health-timeout 5s
-      --health-retries 5
