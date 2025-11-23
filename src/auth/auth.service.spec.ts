@@ -10,10 +10,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UserRole } from '@prisma/client';
 
 jest.mock('bcrypt', () => ({
-  hash: jest.fn(async (plain: string, rounds: number) => `bcrypt-mock|${rounds}|${plain}`),
-  compare: jest.fn(async (plain: string, hash: string) => {
+  hash: jest.fn((plain: string, rounds: number) =>
+    Promise.resolve(`bcrypt-mock|${rounds}|${plain}`),
+  ),
+  compare: jest.fn((plain: string, hash: string) => {
     const parts = hash.split('|');
-    return parts.length === 3 && parts[2] === plain;
+    return Promise.resolve(parts.length === 3 && parts[2] === plain);
   }),
 }));
 
@@ -106,38 +108,39 @@ describe('AuthService', () => {
       id: 5,
       email: 'user@example.com',
       role: 'CUSTOMER',
-          passwordSaltRounds: 4,
+      passwordSaltRounds: 4,
       passwordHash,
     });
-        const result = await service.login('user@example.com', 'secret');
-    const token = await service.login('user@example.com', 'secret');
+    const result = await service.login('user@example.com', 'secret');
 
     expect(findUniqueMock).toHaveBeenCalledWith({
       where: { email: 'user@example.com' },
       select: {
         email: true,
         id: true,
-            passwordSaltRounds: true,
+        passwordSaltRounds: true,
         passwordHash: true,
         role: true,
       },
     });
 
-        const decoded = jwt.verify(result.accessToken, publicKeyPem, {
-          algorithms: ['RS256'],
-        }) as jwt.JwtPayload;
-        expect(decoded.sub).toBe('5');
-        expect(decoded.email).toBe('user@example.com');
-        expect(decoded.role).toBe('CUSTOMER');
-        expect(decoded.userId).toBe(5);
-        expect(result.user).toEqual({ id: 5, email: 'user@example.com', role: 'CUSTOMER' });
+    const decoded = jwt.verify(result.accessToken, publicKeyPem, {
+      algorithms: ['RS256'],
+    }) as jwt.JwtPayload;
+    expect(decoded.sub).toBe('5');
+    expect(decoded.email).toBe('user@example.com');
+    expect(decoded.role).toBe('CUSTOMER');
+    expect(decoded.userId).toBe(5);
+    expect(result.user).toEqual({ id: 5, email: 'user@example.com', role: 'CUSTOMER' });
     expect(jwtKeyServiceMock.getPrivateKey).toHaveBeenCalled();
   });
 
   it('throws when user is not found', async () => {
     findUniqueMock.mockResolvedValue(null);
 
-    await expect(service.login('missing@example.com', 'secret')).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(service.login('missing@example.com', 'secret')).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
     expect(findUniqueMock).toHaveBeenCalledWith({
       where: { email: 'missing@example.com' },
       select: {
@@ -160,7 +163,9 @@ describe('AuthService', () => {
       passwordSaltRounds: 4,
     });
 
-    await expect(service.login('user@example.com', 'secret')).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(service.login('user@example.com', 'secret')).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
   });
 
   it('hashes passwords with configured salt rounds', async () => {

@@ -14,14 +14,29 @@ export class JwtKeyService {
   constructor(private readonly configService: ConfigService) {}
 
   getPrivateKey(): string {
-    return this.getKey('private', 'app.jwt.privateKeyPath', 'JWT private key path is not configured', 'Unable to load JWT private key');
+    return this.getKey(
+      'private',
+      'app.jwt.privateKeyPath',
+      'JWT private key path is not configured',
+      'Unable to load JWT private key',
+    );
   }
 
   getPublicKey(): string {
-    return this.getKey('public', 'app.jwt.publicKeyPath', 'JWT public key path is not configured', 'Unable to load JWT public key');
+    return this.getKey(
+      'public',
+      'app.jwt.publicKeyPath',
+      'JWT public key path is not configured',
+      'Unable to load JWT public key',
+    );
   }
 
-  private getKey(kind: KeyKind, configKey: string, missingMessage: string, loadErrorMessage: string): string {
+  private getKey(
+    kind: KeyKind,
+    configKey: string,
+    missingMessage: string,
+    loadErrorMessage: string,
+  ): string {
     const cached = this.cache[kind];
 
     if (cached) {
@@ -43,7 +58,7 @@ export class JwtKeyService {
 
       this.cache[kind] = key;
       return key;
-    } catch (error) {
+    } catch {
       throw new InternalServerErrorException(loadErrorMessage);
     }
   }

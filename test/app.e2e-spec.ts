@@ -117,6 +117,46 @@ const assertPaymentResponse = (value: unknown): PaymentResponseJson => {
   return value as PaymentResponseJson;
 };
 
+type AuthResponseJson = {
+  accessToken: string;
+  user: {
+    id: number;
+    email: string;
+    role: string;
+  };
+};
+
+const assertAuthResponse = (value: unknown): AuthResponseJson => {
+  if (!isRecord(value)) {
+    throw new Error('La respuesta de autenticación debe ser un objeto.');
+  }
+
+  const { accessToken, user } = value;
+
+  if (typeof accessToken !== 'string') {
+    throw new Error('El token de acceso debe ser una cadena.');
+  }
+
+  if (!isRecord(user)) {
+    throw new Error('El usuario devuelto debe ser un objeto.');
+  }
+
+  const { id, email, role } = user;
+
+  if (typeof id !== 'number' || typeof email !== 'string' || typeof role !== 'string') {
+    throw new Error('El usuario devuelto debe incluir id, email y role válidos.');
+  }
+
+  return {
+    accessToken,
+    user: {
+      id,
+      email,
+      role,
+    },
+  };
+};
+
 describe('API integration (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaClient;
@@ -167,7 +207,8 @@ describe('API integration (e2e)', () => {
       .send({ email: customerEmail, password: customerPassword })
       .expect(201);
 
-    customerToken = registrationResponse.body.accessToken;
+    const { accessToken: registerToken } = assertAuthResponse(registrationResponse.body as unknown);
+    customerToken = registerToken;
 
     const adminPassword = 'AdminStrong123';
     const adminHash = await bcrypt.hash(adminPassword, 10);
@@ -185,7 +226,8 @@ describe('API integration (e2e)', () => {
       .send({ email: 'admin@example.com', password: adminPassword })
       .expect(200);
 
-    adminToken = adminLoginResponse.body.accessToken;
+    const { accessToken: loginToken } = assertAuthResponse(adminLoginResponse.body as unknown);
+    adminToken = loginToken;
   });
 
   afterAll(async () => {

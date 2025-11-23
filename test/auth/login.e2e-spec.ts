@@ -11,6 +11,53 @@ import { AuthService } from '../../src/auth/auth.service';
 import { JwtKeyService } from '../../src/auth/jwt-key.service';
 import { PrismaService } from '../../src/prisma/prisma.service';
 
+type AuthResponseJson = {
+  accessToken: string;
+  user: {
+    id: number;
+    email: string;
+    role: string;
+  };
+};
+
+const assertAuthResponse = (value: unknown): AuthResponseJson => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error('La respuesta debe ser un objeto con credenciales.');
+  }
+
+  const { accessToken, user } = value as {
+    accessToken?: unknown;
+    user?: unknown;
+  };
+
+  if (typeof accessToken !== 'string') {
+    throw new Error('Se esperaba un token de acceso válido.');
+  }
+
+  if (typeof user !== 'object' || user === null || Array.isArray(user)) {
+    throw new Error('Se esperaba un objeto usuario.');
+  }
+
+  const { id, email, role } = user as {
+    id?: unknown;
+    email?: unknown;
+    role?: unknown;
+  };
+
+  if (typeof id !== 'number' || typeof email !== 'string' || typeof role !== 'string') {
+    throw new Error('El usuario debe exponer id, email y role.');
+  }
+
+  return {
+    accessToken,
+    user: {
+      id,
+      email,
+      role,
+    },
+  };
+};
+
 describe('AuthController /auth/login (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
@@ -71,7 +118,9 @@ describe('AuthController /auth/login (e2e)', () => {
     }).compile();
 
     app = moduleRef.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
+    );
     await app.init();
   });
 
@@ -87,20 +136,20 @@ describe('AuthController /auth/login (e2e)', () => {
       .send({ email: 'e2e.login@example.com', password: 'ValidPass123' })
       .expect(200);
 
-    expect(response.body).toHaveProperty('accessToken');
-    expect(response.body.user).toEqual({
-      id: expect.any(Number),
-      email: 'e2e.login@example.com',
-      role: 'CUSTOMER',
-    });
+    const authPayload = assertAuthResponse(response.body as unknown); // eslint-disable-line @typescript-eslint/no-unsafe-assignment
+    const { accessToken, user } = authPayload;
 
-    const decoded = jwt.verify(response.body.accessToken, keyPair.publicKey, {
+    expect(typeof user.id).toBe('number');
+    expect(user.email).toBe('e2e.login@example.com');
+    expect(user.role).toBe('CUSTOMER');
+
+    const decoded = jwt.verify(accessToken, keyPair.publicKey, {
       algorithms: ['RS256'],
     }) as jwt.JwtPayload;
 
     expect(decoded.email).toBe('e2e.login@example.com');
     expect(decoded.role).toBe('CUSTOMER');
-    expect(decoded.userId).toBe(response.body.user.id);
+    expect(decoded.userId).toBe(user.id);
   });
 
   it('rejects invalid credentials', async () => {
