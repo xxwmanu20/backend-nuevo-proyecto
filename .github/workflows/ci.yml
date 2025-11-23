@@ -15,26 +15,27 @@ jobs:
         with:
           node-version: 18
           cache: npm
-          cache-dependency-path: backend/package-lock.json
+          # CORREGIDO: Busca package-lock.json en la raíz
+          cache-dependency-path: package-lock.json
       - name: Install dependencies
-        working-directory: backend
+        # CORREGIDO: Quitamos working-directory: backend
         run: npm ci
       - name: Cache Prisma client
         uses: actions/cache@v4
         with:
-          path: backend/node_modules/.prisma
-          key: prisma-${{ runner.os }}-${{ hashFiles('backend/prisma/schema.prisma') }}
+          # CORREGIDO: Ruta ajustada a la raíz
+          path: node_modules/.prisma
+          key: prisma-${{ runner.os }}-${{ hashFiles('prisma/schema.prisma') }}
           restore-keys: |
             prisma-${{ runner.os }}-
       - name: Run unit tests
-        working-directory: backend
+        # CORREGIDO: Quitamos working-directory: backend
         run: npm run test:unit
 
   full:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     needs: []
-    # Aquí está la configuración correcta del servicio
     services:
       postgres:
         image: postgres:15
@@ -58,23 +59,19 @@ jobs:
         with:
           node-version: 18
           cache: npm
-          cache-dependency-path: backend/package-lock.json
+          cache-dependency-path: package-lock.json
       - name: Install dependencies
-        working-directory: backend
         run: npm ci
       - name: Cache Prisma client
         uses: actions/cache@v4
         with:
-          path: backend/node_modules/.prisma
-          key: prisma-${{ runner.os }}-${{ hashFiles('backend/prisma/schema.prisma') }}
+          path: node_modules/.prisma
+          key: prisma-${{ runner.os }}-${{ hashFiles('prisma/schema.prisma') }}
           restore-keys: |
             prisma-${{ runner.os }}-
       - name: Run Prisma migrations
-        working-directory: backend
         run: npx prisma migrate deploy
       - name: Seed database
-        working-directory: backend
         run: npm run db:seed
       - name: Run full test suite
-        working-directory: backend
         run: npm run test
