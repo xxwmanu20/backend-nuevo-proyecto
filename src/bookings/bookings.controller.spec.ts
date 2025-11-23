@@ -14,6 +14,20 @@ const bookingResponse = {
   service: { id: 2, name: 'Test Service', description: 'Desc' },
 } as const;
 
+const assertErrorBody = (value: unknown): { message: string } => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error('La respuesta de error debe ser un objeto.');
+  }
+
+  const message = (value as { message?: unknown }).message;
+
+  if (typeof message !== 'string') {
+    throw new Error('La respuesta de error debe incluir un mensaje.');
+  }
+
+  return { message };
+};
+
 describe('BookingsController', () => {
   let app: INestApplication;
   const createMock = jest.fn();
@@ -199,7 +213,8 @@ describe('BookingsController', () => {
       .get('/bookings/abc')
       .expect(400)
       .expect(({ body }) => {
-        expect(body.message).toBe('Validation failed (numeric string is expected)');
+        const { message } = assertErrorBody(body);
+        expect(message).toBe('Validation failed (numeric string is expected)');
       });
 
     expect(detailMock).not.toHaveBeenCalled();

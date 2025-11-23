@@ -2,14 +2,14 @@ import { JwtKeyService } from './jwt-key.service';
 import { JwtStrategy } from './jwt.strategy';
 
 describe('JwtStrategy', () => {
-  it('returns user context during validation', async () => {
+  it('returns user context during validation', () => {
     const keyServiceMock = {
       getPublicKey: jest.fn(() => 'public-key'),
     } satisfies Pick<JwtKeyService, 'getPublicKey'>;
 
     const strategy = new JwtStrategy(keyServiceMock as unknown as JwtKeyService);
 
-    const result = await strategy.validate({
+    const result = strategy.validate({
       sub: '42',
       userId: 42,
       email: 'user@example.com',

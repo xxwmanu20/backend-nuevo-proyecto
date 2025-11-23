@@ -17,11 +17,60 @@ type UserRecord = {
   role: string;
 };
 
+type AuthResponseJson = {
+  accessToken: string;
+  user: {
+    id: number;
+    email: string;
+    role: string;
+  };
+};
+
+const assertAuthResponse = (value: unknown): AuthResponseJson => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error('La respuesta de autenticación debe ser un objeto.');
+  }
+
+  const { accessToken, user } = value as {
+    accessToken?: unknown;
+    user?: unknown;
+  };
+
+  if (typeof accessToken !== 'string') {
+    throw new Error('La respuesta de autenticación debe incluir un token.');
+  }
+
+  if (typeof user !== 'object' || user === null || Array.isArray(user)) {
+    throw new Error('La respuesta de autenticación debe incluir un usuario.');
+  }
+
+  const { id, email, role } = user as {
+    id?: unknown;
+    email?: unknown;
+    role?: unknown;
+  };
+
+  if (typeof id !== 'number' || typeof email !== 'string' || typeof role !== 'string') {
+    throw new Error('El usuario debe exponer id, email y role válidos.');
+  }
+
+  return {
+    accessToken,
+    user: {
+      id,
+      email,
+      role,
+    },
+  };
+};
+
 jest.mock('bcrypt', () => ({
-  hash: jest.fn(async (plain: string, rounds: number) => `bcrypt-mock|${rounds}|${plain}`),
-  compare: jest.fn(async (plain: string, hash: string) => {
+  hash: jest.fn((plain: string, rounds: number) =>
+    Promise.resolve(`bcrypt-mock|${rounds}|${plain}`),
+  ),
+  compare: jest.fn((plain: string, hash: string) => {
     const parts = hash.split('|');
-    return parts.length === 3 && parts[2] === plain;
+    return Promise.resolve(parts.length === 3 && parts[2] === plain);
   }),
 }));
 
@@ -30,27 +79,29 @@ class PrismaServiceMock {
   private nextId = 1;
 
   user = {
-    findUnique: jest.fn(({ where, select }: { where: { email?: string }; select?: Record<string, boolean> }) => {
-      const user = this.users.find((item) =>
-        where.email ? item.email === where.email : false,
-      );
+    findUnique: jest.fn(
+      ({ where, select }: { where: { email?: string }; select?: Record<string, boolean> }) => {
+        const user = this.users.find((item) => (where.email ? item.email === where.email : false));
 
-      if (!user) {
-        return null;
-      }
+        if (!user) {
+          return null;
+        }
 
-      return select ? PrismaServiceMock.applySelect(user, select) : { ...user };
-    }),
-    create: jest.fn(({ data, select }: { data: Omit<UserRecord, 'id'>; select?: Record<string, boolean> }) => {
-      const newUser: UserRecord = {
-        id: this.nextId++,
-        ...data,
-      };
+        return select ? PrismaServiceMock.applySelect(user, select) : { ...user };
+      },
+    ),
+    create: jest.fn(
+      ({ data, select }: { data: Omit<UserRecord, 'id'>; select?: Record<string, boolean> }) => {
+        const newUser: UserRecord = {
+          id: this.nextId++,
+          ...data,
+        };
 
-      this.users.push(newUser);
+        this.users.push(newUser);
 
-      return select ? PrismaServiceMock.applySelect(newUser, select) : { ...newUser };
-    }),
+        return select ? PrismaServiceMock.applySelect(newUser, select) : { ...newUser };
+      },
+    ),
   };
 
   reset(): void {
@@ -64,11 +115,15 @@ class PrismaServiceMock {
     return this.users;
   }
 
-  private static applySelect(entity: UserRecord, select: Record<string, boolean>): Partial<UserRecord> {
+  private static applySelect(
+    entity: UserRecord,
+    select: Record<string, boolean>,
+  ): Partial<UserRecord> {
     return Object.entries(select).reduce<Partial<UserRecord>>((acc, [key, include]) => {
       if (include) {
         const typedKey = key as keyof UserRecord;
-        (acc as Record<keyof UserRecord, UserRecord[keyof UserRecord]>)[typedKey] = entity[typedKey];
+        (acc as Record<keyof UserRecord, UserRecord[keyof UserRecord]>)[typedKey] =
+          entity[typedKey];
       }
 
       return acc;
@@ -137,7 +192,9 @@ describe('AuthController /auth/register (e2e)', () => {
     }).compile();
 
     app = moduleRef.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
+    );
     await app.init();
   });
 
@@ -152,8 +209,13 @@ describe('AuthController /auth/register (e2e)', () => {
       .send({ email: 'user@example.com', password: 'strong-pass' })
       .expect(201);
 
-    expect(registerResponse.body.user).toEqual({ id: 1, email: 'user@example.com', role: 'CUSTOMER' });
-    expect(typeof registerResponse.body.accessToken).toBe('string');
+    const registerPayload = assertAuthResponse(registerResponse.body as unknown);
+
+    expect(registerPayload.user).toEqual({
+      id: 1,
+      email: 'user@example.com',
+      role: 'CUSTOMER',
+    });
     expect(jwtKeyServiceMock.getPrivateKey).toHaveBeenCalledTimes(1);
 
     const storedUsers = prismaMock.getAllUsers();
@@ -165,7 +227,7 @@ describe('AuthController /auth/register (e2e)', () => {
       role: 'CUSTOMER',
     });
 
-    const decoded = jwt.verify(registerResponse.body.accessToken, publicKey, {
+    const decoded = jwt.verify(registerPayload.accessToken, publicKey, {
       algorithms: ['RS256'],
     }) as jwt.JwtPayload;
     expect(decoded.email).toBe('user@example.com');
@@ -176,8 +238,8 @@ describe('AuthController /auth/register (e2e)', () => {
       .send({ email: 'user@example.com', password: 'strong-pass' })
       .expect(200)
       .expect(({ body }) => {
-        expect(body.user).toEqual({ id: 1, email: 'user@example.com', role: 'CUSTOMER' });
-        expect(typeof body.accessToken).toBe('string');
+        const authPayload = assertAuthResponse(body as unknown);
+        expect(authPayload.user).toEqual({ id: 1, email: 'user@example.com', role: 'CUSTOMER' });
       });
 
     await request(app.getHttpServer())

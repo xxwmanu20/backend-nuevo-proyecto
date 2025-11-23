@@ -31,7 +31,10 @@ describe('RolesGuard', () => {
   });
 
   it('allows access when user role matches required roles', () => {
-    (reflectorMock.getAllAndOverride as jest.Mock).mockReturnValue([UserRole.ADMIN, UserRole.CUSTOMER]);
+    (reflectorMock.getAllAndOverride as jest.Mock).mockReturnValue([
+      UserRole.ADMIN,
+      UserRole.CUSTOMER,
+    ]);
 
     expect(guard.canActivate(createContext({ role: UserRole.ADMIN }))).toBe(true);
   });
@@ -39,7 +42,9 @@ describe('RolesGuard', () => {
   it('throws when user role is missing or does not match', () => {
     (reflectorMock.getAllAndOverride as jest.Mock).mockReturnValue([UserRole.ADMIN]);
 
-    expect(() => guard.canActivate(createContext({ role: UserRole.CUSTOMER }))).toThrow(ForbiddenException);
+    expect(() => guard.canActivate(createContext({ role: UserRole.CUSTOMER }))).toThrow(
+      ForbiddenException,
+    );
     expect(() => guard.canActivate(createContext())).toThrow(ForbiddenException);
   });
 });

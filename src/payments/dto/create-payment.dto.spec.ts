@@ -14,10 +14,11 @@ const buildDto = (override: Partial<CreatePaymentDto> = {}) =>
   });
 
 const hasErrorFor = (errors: ValidationError[], property: string): boolean =>
-  errors.some((error) =>
-    error.property === property &&
-    error.constraints !== undefined &&
-    Object.keys(error.constraints).length > 0,
+  errors.some(
+    (error) =>
+      error.property === property &&
+      error.constraints !== undefined &&
+      Object.keys(error.constraints).length > 0,
   );
 
 describe('CreatePaymentDto validation', () => {

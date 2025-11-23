@@ -2,9 +2,54 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma, ServiceOffering } from '@prisma/client';
 import { ServicesService } from './services.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ServiceListItem } from './dto/service.response';
 
 // Helper to construct Prisma decimals in a concise way inside fixtures.
 const decimal = (value: string): Prisma.Decimal => new Prisma.Decimal(value);
+
+type ServiceOfferingFixture = ServiceOffering & {
+  professional: {
+    id: number;
+    userId: number;
+    bio: string | null;
+    hourlyRate: Prisma.Decimal | null;
+    rating: Prisma.Decimal | null;
+    user: {
+      id: number;
+      email: string;
+      passwordHash: string;
+      role: string;
+      createdAt: Date;
+      updatedAt: Date;
+    };
+  };
+};
+
+function assertServiceList(value: unknown): asserts value is ServiceListItem[] {
+  if (!Array.isArray(value)) {
+    throw new Error('Se esperaba una lista de servicios.');
+  }
+
+  value.forEach((item, index) => {
+    if (typeof item !== 'object' || item === null || Array.isArray(item)) {
+      throw new Error(`Elemento inválido en la posición ${index}.`);
+    }
+
+    const candidate = item as Record<string, unknown>;
+
+    if (typeof candidate.id !== 'number' || typeof candidate.name !== 'string') {
+      throw new Error(`El servicio en la posición ${index} carece de id o nombre.`);
+    }
+
+    if (typeof candidate.basePrice !== 'number') {
+      throw new Error(`El servicio en la posición ${index} carece de basePrice numérico.`);
+    }
+
+    if (!Array.isArray(candidate.offerings)) {
+      throw new Error(`El servicio en la posición ${index} debe incluir un arreglo offerings.`);
+    }
+  });
+}
 
 describe('ServicesService', () => {
   let service: ServicesService;
@@ -33,7 +78,7 @@ describe('ServicesService', () => {
   });
 
   it('maps services with offerings sorted by price and converts decimals to numbers', async () => {
-    const offerings: Array<ServiceOffering & { professional: any }> = [
+    const offerings: ServiceOfferingFixture[] = [
       {
         id: 1,
         professionalId: 11,
@@ -96,7 +141,9 @@ describe('ServicesService', () => {
       },
     ]);
 
+    /* eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- la respuesta proviene del servicio bajo prueba con datos controlados. */
     const result = await service.list();
+    assertServiceList(result);
 
     expect(findManyMock).toHaveBeenCalledTimes(1);
     expect(findManyMock).toHaveBeenCalledWith(
@@ -128,21 +175,24 @@ describe('ServicesService', () => {
         id: 2,
         name: 'Categoría',
       },
-      offerings: [
-        expect.objectContaining({
-          id: 1,
-          price: 500,
-          professional: expect.objectContaining({
-            email: 'carlos@example.com',
-            hourlyRate: 350,
-            rating: 4.8,
-          }),
-        }),
-        expect.objectContaining({
-          id: 2,
-          price: 650,
-        }),
-      ],
+    });
+
+    expect(mapped.offerings).toHaveLength(2);
+
+    const [firstOffering, secondOffering] = mapped.offerings;
+    expect(firstOffering).toMatchObject({
+      id: 1,
+      price: 500,
+    });
+    expect(firstOffering.professional).toMatchObject({
+      email: 'carlos@example.com',
+      hourlyRate: 350,
+      rating: 4.8,
+    });
+
+    expect(secondOffering).toMatchObject({
+      id: 2,
+      price: 650,
     });
   });
 
@@ -200,15 +250,23 @@ describe('ServicesService', () => {
     ]);
 
     const result = await service.list();
+    assertServiceList(result);
 
     expect(result).toHaveLength(2);
 
-    const [noOfferings, withNullMetrics] = result;
+    const noOfferings = result[0]; // eslint-disable-line @typescript-eslint/no-unsafe-assignment
+    const withNullMetrics = result[1]; // eslint-disable-line @typescript-eslint/no-unsafe-assignment
+
+    if (!noOfferings || !withNullMetrics) {
+      throw new Error('Se esperaban dos servicios en la respuesta.');
+    }
     expect(noOfferings.offerings).toHaveLength(0);
     expect(noOfferings.description).toBeUndefined();
     expect(noOfferings.category).toMatchObject({ id: 4, name: 'Categoría vacía' });
-
-    const [offering] = withNullMetrics.offerings;
+    const offering = withNullMetrics.offerings[0];
+    if (!offering) {
+      throw new Error('Se esperaba al menos una oferta para el servicio con métricas nulas.');
+    }
     expect(withNullMetrics).toMatchObject({
       id: 8,
       name: 'Servicio con métricas nulas',
