@@ -1,4 +1,9 @@
-import { ConflictException, InternalServerErrorException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  InternalServerErrorException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -125,7 +130,7 @@ export class AuthService {
         algorithm: 'RS256',
         expiresIn: this.getJwtExpiresIn(),
       });
-    } catch (error) {
+    } catch {
       throw new InternalServerErrorException('Unable to sign access token');
     }
   }
