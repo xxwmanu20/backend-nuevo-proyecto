@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  PROFESSIONAL
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  REQUIRES_CONFIRMATION
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id                   Int              @id @default(autoincrement())
+  email                String           @unique
+  passwordHash         String
+  passwordSaltRounds   Int              @default(10)
+  role                 UserRole         @default(CUSTOMER)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  customerProfile      Customer?
+  professionalProfile  Professional?
+}
+
+model Customer {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @unique
+  phone     String?
+  user      User      @relation(fields: [userId], references: [id])
+  bookings  Booking[] @relation("BookingCustomer")
+}
+
+model Professional {
+  id          Int               @id @default(autoincrement())
+  userId      Int               @unique
+  bio         String?
+  hourlyRate  Decimal?          @db.Decimal(10, 2)
+  rating      Decimal?          @db.Decimal(3, 2)
+  user        User              @relation(fields: [userId], references: [id])
+  bookings    Booking[]         @relation("BookingProfessional")
+  offerings   ServiceOffering[]
+}
+
+model ServiceCategory {
+  id          Int        @id @default(autoincrement())
+  name        String
+  description String?
+  services    Service[]
+}
+
+model Service {
+  id          Int              @id @default(autoincrement())
+  name        String
+  description String?
+  basePrice   Decimal          @db.Decimal(10, 2)
+  categoryId  Int
+  category    ServiceCategory  @relation(fields: [categoryId], references: [id])
+  bookings    Booking[]
+  offerings   ServiceOffering[]
+}
+
+model ServiceOffering {
+  id             Int           @id @default(autoincrement())
+  professionalId Int
+  serviceId      Int
+  price          Decimal       @db.Decimal(10, 2)
+  isActive       Boolean       @default(true)
+  professional   Professional  @relation(fields: [professionalId], references: [id])
+  service        Service       @relation(fields: [serviceId], references: [id])
+}
+
+model Booking {
+  id               Int            @id @default(autoincrement())
+  customerId       Int
+  professionalId   Int?
+  serviceId        Int
+  scheduledAt      DateTime
+  status           BookingStatus  @default(PENDING)
+  notes            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  customer         Customer       @relation("BookingCustomer", fields: [customerId], references: [id])
+  professional     Professional?  @relation("BookingProfessional", fields: [professionalId], references: [id])
+  service          Service        @relation(fields: [serviceId], references: [id])
+  payments         Payment[]
+}
+
+model Payment {
+  id                Int            @id @default(autoincrement())
+  bookingId         Int
+  amount            Decimal        @db.Decimal(10, 2)
+  currency          String
+  status            PaymentStatus  @default(REQUIRES_CONFIRMATION)
+  provider          String
+  providerPaymentId String?
+  clientSecret      String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  booking           Booking        @relation(fields: [bookingId], references: [id])
+}
