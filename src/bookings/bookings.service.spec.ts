@@ -91,6 +91,37 @@ describe('BookingsService', () => {
     });
   });
 
+  it('returns booking detail when record exists and normalizes nullable fields', async () => {
+    const scheduledAt = new Date('2025-03-03T09:30:00.000Z');
+    findUniqueMock.mockResolvedValue({
+      id: 101,
+      status: BookingStatus.COMPLETED,
+      scheduledAt,
+      service: {
+        id: 9,
+        name: 'Visita técnica',
+        description: null,
+      },
+    });
+
+    const detail = await service.detail(101);
+
+    expect(findUniqueMock).toHaveBeenCalledWith({
+      where: { id: 101 },
+      include: { service: true },
+    });
+    expect(detail).toEqual({
+      id: 101,
+      status: BookingStatus.COMPLETED,
+      scheduledAt,
+      service: {
+        id: 9,
+        name: 'Visita técnica',
+        description: undefined,
+      },
+    });
+  });
+
   it('applies pagination arguments on list() and maps bookings', async () => {
     const pagination: PaginationDto = { offset: 40, limit: 10 };
     const scheduled = new Date('2025-02-02T12:00:00.000Z');
