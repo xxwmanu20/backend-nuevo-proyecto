@@ -102,6 +102,54 @@ describe('AuthService', () => {
     jest.clearAllMocks();
   });
 
+  it('uses numeric expiresIn when configuration provides number-like strings', async () => {
+    const passwordHash = await service.hashPassword('secret');
+    configValues.set('app.jwt.expiresIn', '1800');
+    const signSpy = jest.spyOn(jwt, 'sign');
+
+    findUniqueMock.mockResolvedValue({
+      id: 9,
+      email: 'timer@example.com',
+      role: 'CUSTOMER',
+      passwordSaltRounds: 4,
+      passwordHash,
+    });
+
+    await service.login('timer@example.com', 'secret');
+
+    expect(signSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ sub: '9' }),
+      expect.any(String),
+      expect.objectContaining({ expiresIn: 1800 }),
+    );
+
+    signSpy.mockRestore();
+  });
+
+  it('falls back to default expiresIn when configuration is empty', async () => {
+    const passwordHash = await service.hashPassword('secret');
+    configValues.set('app.jwt.expiresIn', '');
+    const signSpy = jest.spyOn(jwt, 'sign');
+
+    findUniqueMock.mockResolvedValue({
+      id: 10,
+      email: 'fallback@example.com',
+      role: 'CUSTOMER',
+      passwordSaltRounds: 4,
+      passwordHash,
+    });
+
+    await service.login('fallback@example.com', 'secret');
+
+    expect(signSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ sub: '10' }),
+      expect.any(String),
+      expect.objectContaining({ expiresIn: '15m' }),
+    );
+
+    signSpy.mockRestore();
+  });
+
   it('returns a token when credentials are valid', async () => {
     const passwordHash = await service.hashPassword('secret');
     findUniqueMock.mockResolvedValue({

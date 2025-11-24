@@ -4,7 +4,7 @@ import { Test } from '@nestjs/testing';
 import { PassportModule } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import { generateKeyPairSync } from 'crypto';
-import { sign } from 'jsonwebtoken';
+import { sign, SignOptions } from 'jsonwebtoken';
 import * as request from 'supertest';
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../src/auth/jwt-auth.guard';
@@ -50,6 +50,11 @@ const servicesResponse = [
   },
 ];
 
+const sleep = (ms: number): Promise<void> =>
+  new Promise(resolve => {
+    setTimeout(resolve, ms);
+  });
+
 describe('Auth Guards integration', () => {
   let app: INestApplication;
   let bookingsListMock: jest.Mock;
@@ -59,8 +64,9 @@ describe('Auth Guards integration', () => {
   let servicesListMock: jest.Mock;
   let privateKey: string;
   let publicKey: string;
+  let tokenExpiresIn: SignOptions['expiresIn'];
 
-  const createToken = (role: UserRole): string =>
+  const createToken = (role: UserRole, expires?: SignOptions['expiresIn']): string =>
     sign(
       {
         sub: '1',
@@ -71,7 +77,7 @@ describe('Auth Guards integration', () => {
       privateKey,
       {
         algorithm: 'RS256',
-        expiresIn: '1h',
+        expiresIn: expires ?? tokenExpiresIn,
       },
     );
 
@@ -87,6 +93,8 @@ describe('Auth Guards integration', () => {
   });
 
   beforeEach(async () => {
+    tokenExpiresIn = '1h';
+
     bookingsCreateMock = jest.fn().mockResolvedValue(bookingResponse);
     bookingsListMock = jest.fn().mockResolvedValue([bookingResponse]);
     bookingsDetailMock = jest.fn().mockResolvedValue(bookingResponse);
@@ -113,7 +121,7 @@ describe('Auth Guards integration', () => {
           useValue: {
             get: (key: string, defaultValue?: unknown) => {
               if (key === 'app.jwt.expiresIn') {
-                return '1h';
+                return tokenExpiresIn;
               }
 
               return defaultValue;
@@ -258,5 +266,19 @@ describe('Auth Guards integration', () => {
       });
 
     expect(servicesListMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects expired tokens', async () => {
+    tokenExpiresIn = '1s';
+    const token = createToken(UserRole.CUSTOMER, '1s');
+
+    await sleep(1100);
+
+    await request(app.getHttpServer())
+      .get('/bookings')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(401);
+
+    expect(bookingsListMock).not.toHaveBeenCalled();
   });
 });
