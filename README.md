@@ -11,6 +11,7 @@ Esqueleto inicial del backend construido con NestJS y Prisma.
 ## Configuración inicial
 1. Clona el repositorio y ve al directorio `backend/`.
 2. Copia `.env.example` a `.env` y actualiza las variables según tu entorno.
+   - Puedes apuntar `JWT_PRIVATE_KEY_PATH` y `JWT_PUBLIC_KEY_PATH` a archivos PEM locales o, si prefieres injectar el contenido directamente (ideal en CI/CD), usa `JWT_PRIVATE_KEY` y `JWT_PUBLIC_KEY` con el PEM completo.
 3. Instala dependencias:
    ```bash
    npm install

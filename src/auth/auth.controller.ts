@@ -4,7 +4,8 @@ import { RegisterDto } from './dto/register.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { PasswordResetRequestDto } from './dto/password-reset-request.dto';
 import { PasswordResetConfirmDto } from './dto/password-reset-confirm.dto';
-import { AuthResult, AuthService } from './auth.service';
+import { AuthService } from './auth.service';
+import { AuthResult } from './interfaces/auth-result.interface';
 
 @Controller('auth')
 export class AuthController {

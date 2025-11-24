@@ -12,18 +12,9 @@ import { SignOptions, sign, verify } from 'jsonwebtoken';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtKeyService } from './jwt-key.service';
 import { JwtTokenPayload } from './interfaces/jwt-token-payload.interface';
+import { AuthResult, AuthenticatedUser } from './interfaces/auth-result.interface';
 
-export interface AuthenticatedUser {
-  id: number;
-  email: string;
-  role: UserRole;
-}
-
-export interface AuthResult {
-  accessToken: string;
-  refreshToken: string;
-  user: AuthenticatedUser;
-}
+export { AuthResult, AuthenticatedUser } from './interfaces/auth-result.interface';
 
 @Injectable()
 export class AuthService {

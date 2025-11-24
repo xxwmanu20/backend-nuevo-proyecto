@@ -5,7 +5,9 @@ export const AppConfig = registerAs('app', () => ({
   databaseUrl: process.env.DATABASE_URL ?? '',
   redisUrl: process.env.REDIS_URL ?? '',
   jwt: {
+    privateKey: process.env.JWT_PRIVATE_KEY ?? process.env.APP_JWT_PRIVATE_KEY ?? '',
     privateKeyPath: process.env.JWT_PRIVATE_KEY_PATH ?? '',
+    publicKey: process.env.JWT_PUBLIC_KEY ?? process.env.APP_JWT_PUBLIC_KEY ?? '',
     publicKeyPath: process.env.JWT_PUBLIC_KEY_PATH ?? '',
     expiresIn: process.env.JWT_EXPIRES_IN ?? '15m',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',

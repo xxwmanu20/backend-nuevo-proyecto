@@ -16,8 +16,9 @@ export class JwtKeyService {
   getPrivateKey(): string {
     return this.getKey(
       'private',
+      'app.jwt.privateKey',
       'app.jwt.privateKeyPath',
-      'JWT private key path is not configured',
+      'JWT private key is not configured',
       'Unable to load JWT private key',
     );
   }
@@ -25,15 +26,17 @@ export class JwtKeyService {
   getPublicKey(): string {
     return this.getKey(
       'public',
+      'app.jwt.publicKey',
       'app.jwt.publicKeyPath',
-      'JWT public key path is not configured',
+      'JWT public key is not configured',
       'Unable to load JWT public key',
     );
   }
 
   private getKey(
     kind: KeyKind,
-    configKey: string,
+    valueConfigKey: string,
+    pathConfigKey: string,
     missingMessage: string,
     loadErrorMessage: string,
   ): string {
@@ -43,16 +46,23 @@ export class JwtKeyService {
       return cached;
     }
 
-    const path = this.configService.get<string>(configKey);
+    const inlineKey = this.normalizeKey(this.configService.get<string>(valueConfigKey) ?? '');
+
+    if (inlineKey) {
+      this.cache[kind] = inlineKey;
+      return inlineKey;
+    }
+
+    const path = this.configService.get<string>(pathConfigKey);
 
     if (!path) {
       throw new InternalServerErrorException(missingMessage);
     }
 
     try {
-      const key = readFileSync(path, 'utf8');
+      const key = this.normalizeKey(readFileSync(path, 'utf8'));
 
-      if (!key.trim()) {
+      if (!key) {
         throw new Error('Key file empty');
       }
 
@@ -61,5 +71,23 @@ export class JwtKeyService {
     } catch {
       throw new InternalServerErrorException(loadErrorMessage);
     }
+  }
+
+  private normalizeKey(content: string): string {
+    if (!content) {
+      return '';
+    }
+
+    const trimmed = content.trim();
+
+    if (!trimmed) {
+      return '';
+    }
+
+    if (trimmed.includes('\n')) {
+      return trimmed;
+    }
+
+    return trimmed.replace(/\\n/g, '\n');
   }
 }
