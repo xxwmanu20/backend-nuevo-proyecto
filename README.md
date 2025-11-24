@@ -37,6 +37,7 @@ La API expone inicialmente módulos de autenticación y reservas.
 - `npm run test`: ejecuta Jest (pruebas unitarias + e2e).
 - `npm run test:unit`: ejecuta únicamente specs unitarias dentro de `src/` (usa `--testPathPattern`).
 - `npm run test:e2e`: ejecuta solo la suite e2e (`--runTestsByPath`).
+- `npm run db:seed`: repuebla datos de ejemplo usando `prisma/seed.ts`.
 
 ## Estructura
 ```
@@ -47,6 +48,24 @@ src/
   prisma/             # Wrapper PrismaService para acceder a la base
   common/             # DTOs y utilidades compartidas
 ```
+
+## Integración continua
+
+El repositorio usa GitHub Actions (`.github/workflows/ci.yml`). El pipeline se activa en:
+
+- Push a `master`.
+- Pull requests dirigidos a cualquier rama.
+- Un cron diario a las 06:00 UTC para revisar que `master` sigue compilando.
+
+El flujo ejecuta tres trabajos encadenados:
+
+1. **Lint**: instala dependencias y corre `npm run lint`.
+2. **Unit Tests**: se ejecuta en pull requests y lanza `npm run test:unit`.
+3. **Full Test Suite**: corre en push/cron, monta PostgreSQL con Docker, migra la base (`npx prisma migrate deploy`), la siembra (`npm run db:seed`) y finalmente dispara `npm run test`.
+
+Para depurar fallos localmente puedes reproducir cada paso con los mismos comandos. Si la última etapa falla por conexión a PostgreSQL, asegúrate de que `DATABASE_URL` apunta a una base alcanzable (consulta `docs/local-e2e-guide.md`).
+
+Más detalles en `docs/ci-pipeline.md`.
 
 ## Próximos pasos
 - Implementar emisión real de JWT y estrategia de guardas.
