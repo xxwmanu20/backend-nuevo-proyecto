@@ -3,4 +3,5 @@ export interface JwtTokenPayload {
   userId: number;
   email: string;
   role: string;
+  tokenType: 'access' | 'refresh' | 'password-reset';
 }

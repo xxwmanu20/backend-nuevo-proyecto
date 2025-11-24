@@ -8,6 +8,8 @@ export const AppConfig = registerAs('app', () => ({
     privateKeyPath: process.env.JWT_PRIVATE_KEY_PATH ?? '',
     publicKeyPath: process.env.JWT_PUBLIC_KEY_PATH ?? '',
     expiresIn: process.env.JWT_EXPIRES_IN ?? '15m',
+    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
+    passwordResetExpiresIn: process.env.JWT_PASSWORD_RESET_EXPIRES_IN ?? '30m',
   },
   bcrypt: {
     saltRounds: (() => {

@@ -119,6 +119,7 @@ const assertPaymentResponse = (value: unknown): PaymentResponseJson => {
 
 type AuthResponseJson = {
   accessToken: string;
+  refreshToken: string;
   user: {
     id: number;
     email: string;
@@ -131,10 +132,14 @@ const assertAuthResponse = (value: unknown): AuthResponseJson => {
     throw new Error('La respuesta de autenticación debe ser un objeto.');
   }
 
-  const { accessToken, user } = value;
+  const { accessToken, refreshToken, user } = value;
 
   if (typeof accessToken !== 'string') {
     throw new Error('El token de acceso debe ser una cadena.');
+  }
+
+  if (typeof refreshToken !== 'string') {
+    throw new Error('El refresh token debe ser una cadena.');
   }
 
   if (!isRecord(user)) {
@@ -149,6 +154,7 @@ const assertAuthResponse = (value: unknown): AuthResponseJson => {
 
   return {
     accessToken,
+    refreshToken,
     user: {
       id,
       email,

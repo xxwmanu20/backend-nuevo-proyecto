@@ -32,10 +32,12 @@ describe('AuthService', () => {
   let service: AuthService;
   const findUniqueMock = jest.fn();
   const createMock = jest.fn();
+  const updateMock = jest.fn();
   const configGetMock = jest.fn();
   const jwtKeyServiceMock = {
     getPrivateKey: jest.fn(),
-  } satisfies Pick<JwtKeyService, 'getPrivateKey'>;
+    getPublicKey: jest.fn(),
+  } satisfies Pick<JwtKeyService, 'getPrivateKey' | 'getPublicKey'>;
   let privateKeyPem = '';
   let publicKeyPem = '';
   let configValues: Map<string, unknown>;
@@ -61,6 +63,8 @@ describe('AuthService', () => {
     configValues = new Map<string, unknown>([
       ['app.bcrypt.saltRounds', 4],
       ['app.jwt.expiresIn', '5m'],
+      ['app.jwt.refreshExpiresIn', '7d'],
+      ['app.jwt.passwordResetExpiresIn', '30m'],
     ]);
 
     configGetMock.mockImplementation((key: string, defaultValue?: unknown) => {
@@ -68,7 +72,9 @@ describe('AuthService', () => {
     });
 
     jwtKeyServiceMock.getPrivateKey.mockReset();
+    jwtKeyServiceMock.getPublicKey.mockReset();
     jwtKeyServiceMock.getPrivateKey.mockReturnValue(privateKeyPem);
+    jwtKeyServiceMock.getPublicKey.mockReturnValue(publicKeyPem);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -79,6 +85,7 @@ describe('AuthService', () => {
             user: {
               findUnique: findUniqueMock,
               create: createMock,
+              update: updateMock,
             },
           },
         },
@@ -179,8 +186,17 @@ describe('AuthService', () => {
     expect(decoded.email).toBe('user@example.com');
     expect(decoded.role).toBe('CUSTOMER');
     expect(decoded.userId).toBe(5);
+    expect(decoded.tokenType).toBe('access');
+
+    const refreshPayload = jwt.verify(result.refreshToken, publicKeyPem, {
+      algorithms: ['RS256'],
+    }) as jwt.JwtPayload;
+    expect(refreshPayload.tokenType).toBe('refresh');
+    expect(refreshPayload.sub).toBe('5');
+
     expect(result.user).toEqual({ id: 5, email: 'user@example.com', role: 'CUSTOMER' });
-    expect(jwtKeyServiceMock.getPrivateKey).toHaveBeenCalled();
+    expect(typeof result.refreshToken).toBe('string');
+    expect(jwtKeyServiceMock.getPrivateKey).toHaveBeenCalledTimes(2);
   });
 
   it('throws when user is not found', async () => {
@@ -259,7 +275,8 @@ describe('AuthService', () => {
       },
     });
     expect(result.user).toEqual({ id: 12, email: 'new@example.com', role: UserRole.CUSTOMER });
-    expect(jwtKeyServiceMock.getPrivateKey).toHaveBeenCalled();
+    expect(typeof result.refreshToken).toBe('string');
+    expect(jwtKeyServiceMock.getPrivateKey).toHaveBeenCalledTimes(2);
   });
 
   it('throws conflict when email already exists during registration', async () => {
@@ -269,5 +286,92 @@ describe('AuthService', () => {
       ConflictException,
     );
     expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it('issues new tokens when refresh token is valid', async () => {
+    const passwordHash = await service.hashPassword('secret');
+    findUniqueMock
+      .mockResolvedValueOnce({
+        id: 5,
+        email: 'user@example.com',
+        role: 'CUSTOMER',
+        passwordSaltRounds: 4,
+        passwordHash,
+      })
+      .mockResolvedValueOnce({
+        id: 5,
+        email: 'user@example.com',
+        role: 'CUSTOMER',
+      });
+
+    const initial = await service.login('user@example.com', 'secret');
+    const refreshed = await service.refresh(initial.refreshToken);
+
+    expect(refreshed.user).toEqual({ id: 5, email: 'user@example.com', role: 'CUSTOMER' });
+    expect(refreshed.accessToken).not.toBe(initial.accessToken);
+    expect(refreshed.refreshToken).not.toBe(initial.refreshToken);
+    expect(jwtKeyServiceMock.getPublicKey).toHaveBeenCalled();
+  });
+
+  it('rejects refresh attempts with invalid token type', async () => {
+    const passwordHash = await service.hashPassword('secret');
+    findUniqueMock.mockResolvedValue({
+      id: 5,
+      email: 'user@example.com',
+      role: 'CUSTOMER',
+      passwordSaltRounds: 4,
+      passwordHash,
+    });
+
+    const initial = await service.login('user@example.com', 'secret');
+
+    await expect(service.refresh(initial.accessToken)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
+  });
+
+  it('returns success without token when requesting reset for unknown email', async () => {
+    findUniqueMock.mockResolvedValue(null);
+
+    const response = await service.requestPasswordReset('unknown@example.com');
+
+    expect(response).toEqual({ success: true });
+    expect(jwtKeyServiceMock.getPrivateKey).not.toHaveBeenCalled();
+  });
+
+  it('issues reset token and updates password on reset', async () => {
+    findUniqueMock
+      .mockResolvedValueOnce({
+        id: 3,
+        email: 'reset@example.com',
+        role: 'CUSTOMER',
+      })
+      .mockResolvedValueOnce({
+        id: 3,
+        email: 'reset@example.com',
+        role: 'CUSTOMER',
+      });
+
+    const request = await service.requestPasswordReset('reset@example.com');
+    expect(request.success).toBe(true);
+    expect(typeof request.resetToken).toBe('string');
+
+    findUniqueMock.mockResolvedValueOnce({
+      id: 3,
+      email: 'reset@example.com',
+      role: 'CUSTOMER',
+    });
+
+    const result = await service.resetPassword(request.resetToken as string, 'NewSecret123');
+
+    expect(updateMock).toHaveBeenCalledWith({
+      where: { id: 3 },
+      data: {
+        passwordHash: 'bcrypt-mock|4|NewSecret123',
+        passwordSaltRounds: 4,
+      },
+    });
+    expect(result.user).toEqual({ id: 3, email: 'reset@example.com', role: 'CUSTOMER' });
+    expect(typeof result.refreshToken).toBe('string');
   });
 });

@@ -51,7 +51,7 @@ const servicesResponse = [
 ];
 
 const sleep = (ms: number): Promise<void> =>
-  new Promise(resolve => {
+  new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
 
@@ -73,6 +73,7 @@ describe('Auth Guards integration', () => {
         userId: 1,
         email: 'user@example.com',
         role,
+        tokenType: 'access',
       },
       privateKey,
       {

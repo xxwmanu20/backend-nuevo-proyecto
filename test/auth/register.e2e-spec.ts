@@ -19,6 +19,7 @@ type UserRecord = {
 
 type AuthResponseJson = {
   accessToken: string;
+  refreshToken: string;
   user: {
     id: number;
     email: string;
@@ -31,13 +32,18 @@ const assertAuthResponse = (value: unknown): AuthResponseJson => {
     throw new Error('La respuesta de autenticación debe ser un objeto.');
   }
 
-  const { accessToken, user } = value as {
+  const { accessToken, refreshToken, user } = value as {
     accessToken?: unknown;
+    refreshToken?: unknown;
     user?: unknown;
   };
 
   if (typeof accessToken !== 'string') {
     throw new Error('La respuesta de autenticación debe incluir un token.');
+  }
+
+  if (typeof refreshToken !== 'string') {
+    throw new Error('Debe incluir un refresh token.');
   }
 
   if (typeof user !== 'object' || user === null || Array.isArray(user)) {
@@ -56,6 +62,7 @@ const assertAuthResponse = (value: unknown): AuthResponseJson => {
 
   return {
     accessToken,
+    refreshToken,
     user: {
       id,
       email,
@@ -216,7 +223,7 @@ describe('AuthController /auth/register (e2e)', () => {
       email: 'user@example.com',
       role: 'CUSTOMER',
     });
-    expect(jwtKeyServiceMock.getPrivateKey).toHaveBeenCalledTimes(1);
+    expect(jwtKeyServiceMock.getPrivateKey).toHaveBeenCalledTimes(2);
 
     const storedUsers = prismaMock.getAllUsers();
     expect(storedUsers).toHaveLength(1);
@@ -232,6 +239,12 @@ describe('AuthController /auth/register (e2e)', () => {
     }) as jwt.JwtPayload;
     expect(decoded.email).toBe('user@example.com');
     expect(decoded.userId).toBe(1);
+    expect(decoded.tokenType).toBe('access');
+
+    const refreshDecoded = jwt.verify(registerPayload.refreshToken, publicKey, {
+      algorithms: ['RS256'],
+    }) as jwt.JwtPayload;
+    expect(refreshDecoded.tokenType).toBe('refresh');
 
     await request(app.getHttpServer())
       .post('/auth/login')
@@ -240,6 +253,7 @@ describe('AuthController /auth/register (e2e)', () => {
       .expect(({ body }) => {
         const authPayload = assertAuthResponse(body as unknown);
         expect(authPayload.user).toEqual({ id: 1, email: 'user@example.com', role: 'CUSTOMER' });
+        expect(typeof authPayload.refreshToken).toBe('string');
       });
 
     await request(app.getHttpServer())

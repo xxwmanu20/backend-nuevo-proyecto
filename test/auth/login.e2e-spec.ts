@@ -13,6 +13,7 @@ import { PrismaService } from '../../src/prisma/prisma.service';
 
 type AuthResponseJson = {
   accessToken: string;
+  refreshToken: string;
   user: {
     id: number;
     email: string;
@@ -25,13 +26,18 @@ const assertAuthResponse = (value: unknown): AuthResponseJson => {
     throw new Error('La respuesta debe ser un objeto con credenciales.');
   }
 
-  const { accessToken, user } = value as {
+  const { accessToken, refreshToken, user } = value as {
     accessToken?: unknown;
+    refreshToken?: unknown;
     user?: unknown;
   };
 
   if (typeof accessToken !== 'string') {
     throw new Error('Se esperaba un token de acceso válido.');
+  }
+
+  if (typeof refreshToken !== 'string') {
+    throw new Error('Se esperaba un refresh token válido.');
   }
 
   if (typeof user !== 'object' || user === null || Array.isArray(user)) {
@@ -50,6 +56,7 @@ const assertAuthResponse = (value: unknown): AuthResponseJson => {
 
   return {
     accessToken,
+    refreshToken,
     user: {
       id,
       email,
@@ -137,7 +144,7 @@ describe('AuthController /auth/login (e2e)', () => {
       .expect(200);
 
     const authPayload = assertAuthResponse(response.body as unknown); // eslint-disable-line @typescript-eslint/no-unsafe-assignment
-    const { accessToken, user } = authPayload;
+    const { accessToken, refreshToken, user } = authPayload;
 
     expect(typeof user.id).toBe('number');
     expect(user.email).toBe('e2e.login@example.com');
@@ -150,6 +157,13 @@ describe('AuthController /auth/login (e2e)', () => {
     expect(decoded.email).toBe('e2e.login@example.com');
     expect(decoded.role).toBe('CUSTOMER');
     expect(decoded.userId).toBe(user.id);
+    expect(decoded.tokenType).toBe('access');
+
+    const refreshDecoded = jwt.verify(refreshToken, keyPair.publicKey, {
+      algorithms: ['RS256'],
+    }) as jwt.JwtPayload;
+    expect(refreshDecoded.tokenType).toBe('refresh');
+    expect(refreshDecoded.sub).toBe(String(user.id));
   });
 
   it('rejects invalid credentials', async () => {
@@ -164,5 +178,25 @@ describe('AuthController /auth/login (e2e)', () => {
       .post('/auth/login')
       .send({ email: 'no-user@example.com', password: 'Whatever123' })
       .expect(401);
+  });
+
+  it('issues new tokens through refresh endpoint', async () => {
+    const loginResponse = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'e2e.login@example.com', password: 'ValidPass123' })
+      .expect(200);
+
+    const loginPayload = assertAuthResponse(loginResponse.body as unknown);
+
+    const refreshResponse = await request(app.getHttpServer())
+      .post('/auth/refresh')
+      .send({ refreshToken: loginPayload.refreshToken })
+      .expect(200);
+
+    const refreshed = assertAuthResponse(refreshResponse.body as unknown);
+
+    expect(refreshed.user).toEqual(loginPayload.user);
+    expect(refreshed.accessToken).not.toBe(loginPayload.accessToken);
+    expect(refreshed.refreshToken).not.toBe(loginPayload.refreshToken);
   });
 });

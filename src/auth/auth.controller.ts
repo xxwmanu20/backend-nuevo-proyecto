@@ -1,6 +1,9 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { PasswordResetRequestDto } from './dto/password-reset-request.dto';
+import { PasswordResetConfirmDto } from './dto/password-reset-confirm.dto';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -16,5 +19,21 @@ export class AuthController {
   @Post('register')
   async register(@Body() payload: RegisterDto) {
     return this.authService.register(payload.email, payload.password);
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refresh(@Body() payload: RefreshTokenDto) {
+    return this.authService.refresh(payload.refreshToken);
+  }
+
+  @Post('password/forgot')
+  async requestPasswordReset(@Body() payload: PasswordResetRequestDto) {
+    return this.authService.requestPasswordReset(payload.email);
+  }
+
+  @Post('password/reset')
+  async resetPassword(@Body() payload: PasswordResetConfirmDto) {
+    return this.authService.resetPassword(payload.token, payload.password);
   }
 }
