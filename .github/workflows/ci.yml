@@ -30,21 +30,17 @@ jobs:
         with:
           node-version: 18
           cache: npm
-          # CORREGIDO: Busca package-lock.json en la raíz
           cache-dependency-path: package-lock.json
       - name: Install dependencies
-        # CORREGIDO: Quitamos working-directory: backend
         run: npm ci
       - name: Cache Prisma client
         uses: actions/cache@v4
         with:
-          # CORREGIDO: Ruta ajustada a la raíz
           path: node_modules/.prisma
           key: prisma-${{ runner.os }}-${{ hashFiles('prisma/schema.prisma') }}
           restore-keys: |
             prisma-${{ runner.os }}-
       - name: Run unit tests
-        # CORREGIDO: Quitamos working-directory: backend
         run: npm run test:unit
 
   full:
@@ -63,9 +59,11 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
     env:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/nuevo_proyecto_test
       NODE_ENV: test
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -73,8 +71,10 @@ jobs:
           node-version: 18
           cache: npm
           cache-dependency-path: package-lock.json
+
       - name: Install dependencies
         run: npm ci
+
       - name: Cache Prisma client
         uses: actions/cache@v4
         with:
@@ -82,9 +82,23 @@ jobs:
           key: prisma-${{ runner.os }}-${{ hashFiles('prisma/schema.prisma') }}
           restore-keys: |
             prisma-${{ runner.os }}-
+
+      # 👇 ***ESTE PASO ES EL QUE FALTABA***
+      - name: Wait for Postgres
+        run: |
+          for i in {1..20}; do
+            nc -z postgres 5432 && echo "Postgres is UP!" && exit 0
+            echo "Waiting for Postgres..."
+            sleep 2
+          done
+          echo "Postgres did not start in time" >&2
+          exit 1
+
       - name: Run Prisma migrations
         run: npx prisma migrate deploy
+
       - name: Seed database
         run: npm run db:seed
+
       - name: Run full test suite
         run: npm run test
