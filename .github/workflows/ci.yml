@@ -67,17 +67,17 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: nuevo_proyecto_test
           POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5433:5432
         options: >-
           --name postgres
-          --health-cmd="pg_isready -U postgres"
+          --health-cmd="pg_isready -h localhost -U postgres"
           --health-interval=5s
           --health-timeout=5s
           --health-retries=10
-
     env:
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/nuevo_proyecto_test
       NODE_ENV: test
-
+      DATABASE_URL: postgres://postgres:postgres@localhost:5433/nuevo_proyecto_test
     steps:
       - uses: actions/checkout@v4
 
@@ -93,7 +93,7 @@ jobs:
       - name: Wait for Postgres
         run: |
           echo "Waiting for Postgres to be ready..."
-          timeout 30 bash -c 'until pg_isready -h postgres -p 5432 -U postgres; do sleep 1; done'
+          timeout 60 bash -c 'until pg_isready -h localhost -p 5433 -U postgres; do sleep 1; done'
           echo "Postgres is ready."
 
       - name: Run Prisma migrations
