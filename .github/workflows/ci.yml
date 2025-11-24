@@ -8,43 +8,53 @@ on:
 jobs:
 
   lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: npm
           cache-dependency-path: package-lock.json
+
       - name: Install dependencies
         run: npm ci
+
       - name: Run ESLint
         run: npm run lint
 
+
   unit:
+    name: Unit Tests
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     needs: lint
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: npm
           cache-dependency-path: package-lock.json
+
       - name: Install dependencies
         run: npm ci
-      - name: Cache Prisma client
+
+      - name: Cache Prisma Client
         uses: actions/cache@v4
         with:
           path: node_modules/.prisma
           key: prisma-${{ runner.os }}-${{ hashFiles('prisma/schema.prisma') }}
-          restore-keys: |
-            prisma-${{ runner.os }}-
+
       - name: Run unit tests
         run: npm run test:unit
 
+
   full:
+    name: Full Test Suite
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     needs: lint
@@ -56,13 +66,12 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: nuevo_proyecto_test
-        ports:
-          - 5432:5432
+          POSTGRES_HOST_AUTH_METHOD: trust
         options: >-
           --health-cmd="pg_isready -U postgres"
-          --health-interval=10s
+          --health-interval=5s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=10
 
     env:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/nuevo_proyecto_test
@@ -70,6 +79,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 18
@@ -79,12 +89,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Wait for postgres
+      - name: Wait for Postgres
         run: |
-          until pg_isready -h postgres -p 5432 -U postgres; do
-            echo "Waiting for Postgres..."
-            sleep 2
-          done
+          echo "Waiting for Postgres to be ready..."
+          timeout 30 bash -c 'until pg_isready -h postgres -p 5432 -U postgres; do sleep 1; done'
+          echo "Postgres is ready."
 
       - name: Run Prisma migrations
         run: npx prisma migrate deploy
