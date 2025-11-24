@@ -26,7 +26,7 @@ Esqueleto inicial del backend construido con NestJS y Prisma.
    npm run start:dev
    ```
 
-La API expone inicialmente módulos de autenticación y reservas.
+La API expone inicialmente módulos de autenticación y reservas. El módulo de autenticación ahora incluye emisión de refresh tokens, rotación segura y flujos para solicitar y confirmar restablecimientos de contraseña.
 
 ## Scripts útiles
 - `npm run start`: ejecuta la versión compilada.
@@ -42,12 +42,21 @@ La API expone inicialmente módulos de autenticación y reservas.
 ## Estructura
 ```
 src/
-  auth/               # Controlador y servicio de autenticación
-  bookings/           # Endpoints básicos de reservas
-  config/             # Configuración centralizada via @nestjs/config
-  prisma/             # Wrapper PrismaService para acceder a la base
-  common/             # DTOs y utilidades compartidas
+   auth/               # Controlador y servicio de autenticación (login, refresh, reset password)
+   bookings/           # Endpoints básicos de reservas
+   config/             # Configuración centralizada via @nestjs/config
+   prisma/             # Wrapper PrismaService para acceder a la base
+   common/             # DTOs y utilidades compartidas
 ```
+
+## Flujos de autenticación
+
+- `POST /auth/login`: devuelve `accessToken`, `refreshToken` y datos del usuario.
+- `POST /auth/refresh`: recibe un refresh token vigente y emite un nuevo par de tokens JWT.
+- `POST /auth/password/forgot`: responde siempre `success: true` y, en entornos de prueba, incluye un `resetToken` para continuar el flujo.
+- `POST /auth/password/reset`: valida el token de restablecimiento y actualiza la contraseña, retornando nuevos tokens activos.
+
+Los tres tipos de token (`access`, `refresh` y `password-reset`) llevan un `tokenType` para validación y un `jwtid` único que evita reutilizar firmas previas.
 
 ## Integración continua
 
@@ -86,8 +95,9 @@ Más detalles en `docs/ci-pipeline.md`.
    temporales para JWT y hacen peticiones con Supertest (no necesitas provisionar archivos de
    claves manualmente para ejecutar las suites).
    - `test/auth/register.e2e-spec.ts`: registra un usuario real, reutiliza el token emitido y prueba login + fallos de contraseña.
-   - `test/auth/login.e2e-spec.ts`: usa un usuario sembrado para validar credenciales válidas, inválidas y correas inexistentes.
+   - `test/auth/login.e2e-spec.ts`: usa un usuario sembrado para validar credenciales válidas, inválidas y correos inexistentes, además del flujo de refresh.
    - `test/app.e2e-spec.ts`: levanta datos completos con `runSeed`, registra un cliente, autentica al admin semilla y verifica `/services`, `/bookings` y `/payments` con tokens emitidos por el sistema.
+   - `test/auth/password-reset.e2e-spec.ts`: cubre la solicitud y confirmación de restablecimiento de contraseña, incluidos escenarios con tokens inválidos o expirados.
 
 - **Semillas de datos**: El script `prisma/seed.ts` expone `runSeed()` para reutilizar datos
    consistentes en e2e y CI. Las pruebas e2e lo invocan antes de cada suite y, en combinación

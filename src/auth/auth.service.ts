@@ -13,13 +13,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtKeyService } from './jwt-key.service';
 import { JwtTokenPayload } from './interfaces/jwt-token-payload.interface';
 
-interface AuthenticatedUser {
+export interface AuthenticatedUser {
   id: number;
   email: string;
   role: UserRole;
 }
 
-interface AuthResult {
+export interface AuthResult {
   accessToken: string;
   refreshToken: string;
   user: AuthenticatedUser;
