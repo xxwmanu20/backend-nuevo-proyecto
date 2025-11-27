@@ -5,6 +5,16 @@ import { PrismaService } from './prisma/prisma.service';
 export class AppController {
   constructor(private readonly prisma: PrismaService) {}
 
+  // NEW: endpoint para "/"
+  @Get('/')
+  root() {
+    return {
+      status: 'online',
+      service: 'backend',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   @Get('/db-check')
   async dbCheck() {
     try {
@@ -14,15 +24,13 @@ export class AppController {
         status: 'ok',
         database: 'connected',
       };
-    } catch (error) {
-      // Convertimos 'unknown' en un objeto seguro para evitar ESLint errors
-      const message =
-        error instanceof Error ? error.message : 'Unknown error';
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error('Unknown error');
 
       return {
         status: 'error',
         database: 'failed',
-        message,
+        message: err.message,
       };
     }
   }
