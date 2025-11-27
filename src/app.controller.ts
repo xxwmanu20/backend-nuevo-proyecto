@@ -15,18 +15,14 @@ export class AppController {
         database: 'connected',
       };
     } catch (error) {
-      if (error instanceof Error) {
-        return {
-          status: 'error',
-          database: 'failed',
-          message: error.message,
-        };
-      }
+      // Convertimos 'unknown' en un objeto seguro para evitar ESLint errors
+      const message =
+        error instanceof Error ? error.message : 'Unknown error';
 
       return {
         status: 'error',
         database: 'failed',
-        message: 'Unknown error',
+        message,
       };
     }
   }
