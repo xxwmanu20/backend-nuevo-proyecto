@@ -15,7 +15,10 @@ async function bootstrap(): Promise<void> {
   );
 
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('app.port', 3000);
+
+  // Railway asigna dinámicamente un puerto mediante process.env.PORT
+  const port =
+    process.env.PORT || configService.get<number>('app.port', 3000);
 
   await app.listen(port);
   Logger.log(`API listening on port ${port}`, 'Bootstrap');
