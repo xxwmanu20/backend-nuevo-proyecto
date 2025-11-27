@@ -1,7 +1,7 @@
 import { registerAs } from '@nestjs/config';
 
 export const AppConfig = registerAs('app', () => ({
-  port: parseInt(process.env.PORT ?? '3000', 10),
+  port: parseInt(process.env.PORT ?? '8080', 10),
   databaseUrl: process.env.DATABASE_URL ?? '',
   redisUrl: process.env.REDIS_URL ?? '',
   jwt: {
