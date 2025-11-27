@@ -1,23 +1,25 @@
 import { Controller, Get } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { PrismaService } from './prisma/prisma.service';
 
 @Controller()
 export class AppController {
-  @Get('db-check')
+  constructor(private readonly prisma: PrismaService) {}
+
+  @Get('/db-check')
   async dbCheck() {
     try {
-      await prisma.$queryRaw`SELECT 1`;
+      await this.prisma.$queryRaw`SELECT 1`;
       return {
         status: 'ok',
         database: 'connected',
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const err = error as Error;
+
       return {
         status: 'error',
         database: 'failed',
-        message: error.message,
+        message: err.message,
       };
     }
   }
