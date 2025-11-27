@@ -8,7 +8,9 @@ export class AppController {
   @Get('/db-check')
   async dbCheck() {
     try {
-      await this.prisma.$queryRaw`SELECT 1`;
+      // Se usa $queryRawUnsafe para evitar problemas con ESLint
+      await this.prisma.$queryRawUnsafe('SELECT 1');
+
       return {
         status: 'ok',
         database: 'connected',
