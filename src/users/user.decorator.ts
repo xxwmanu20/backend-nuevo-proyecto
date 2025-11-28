@@ -1,20 +1,18 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { Request } from 'express';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { User, AuthenticatedUser } from './user.decorator';
 
-export interface AuthenticatedUser {
-  id: number;
-  email: string;
-  role: string;
+@Controller('users')
+export class UsersController {
+  // Endpoint protegido: GET /users/me
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  getMe(@User() user: AuthenticatedUser) {
+    // Retornamos solo propiedades seguras de user
+    return {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    };
+  }
 }
-
-// Extendemos Request para tipar `user`
-interface RequestWithUser extends Request {
-  user: AuthenticatedUser;
-}
-
-export const User = createParamDecorator(
-  (_data: unknown, ctx: ExecutionContext): AuthenticatedUser => {
-    const request = ctx.switchToHttp().getRequest<RequestWithUser>();
-    return request.user;
-  },
-);
