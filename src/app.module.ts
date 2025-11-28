@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ServicesModule } from './services/services.module';
+import { UsersModule } from './users/users.module'; // <-- importamos UsersModule
 import { AppController } from './app.controller';
 
 @Module({
@@ -19,6 +20,7 @@ import { AppController } from './app.controller';
     BookingsModule,
     ServicesModule,
     PaymentsModule,
+    UsersModule, // <-- agregamos aquí
   ],
   controllers: [AppController],
 })
