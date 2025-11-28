@@ -1,18 +1,26 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { User, AuthenticatedUser } from './user.decorator';
+import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { Request } from 'express';
 
-@Controller('users')
-export class UsersController {
-  // Endpoint protegido: GET /users/me
-  @UseGuards(JwtAuthGuard)
-  @Get('me')
-  getMe(@User() user: AuthenticatedUser) {
-    // Retornamos solo propiedades seguras de user
-    return {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    };
-  }
+export interface AuthenticatedUser {
+  id: number;
+  email: string;
+  role: string;
 }
+
+// Extendemos Request para tipar `user`
+interface RequestWithUser extends Request {
+  user: AuthenticatedUser;
+}
+
+export const User = createParamDecorator(
+  (_data: unknown, ctx: ExecutionContext): AuthenticatedUser => {
+    const request = ctx.switchToHttp().getRequest<RequestWithUser>();
+
+    if (!request.user) {
+      throw new Error('User not found on request');
+    }
+
+    // Aquí hacemos casting explícito para que ESLint deje de quejarse
+    return request.user as AuthenticatedUser;
+  },
+);
