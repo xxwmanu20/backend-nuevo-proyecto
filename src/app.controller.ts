@@ -1,19 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
-
-interface ServiceInfo {
-  status: string;
-  service: string;
-  timestamp: string;
-}
-
-interface VersionInfo {
-  version: string;
-}
+import { PrismaService } from './prisma/prisma.service';
 
 @Controller()
 export class AppController {
-  @Get('health')
-  getHealth(): ServiceInfo {
+  constructor(private readonly prisma: PrismaService) {}
+
+  // NEW: endpoint para "/"
+  @Get('/')
+  root() {
     return {
       status: 'online',
       service: 'backend',
@@ -21,10 +15,23 @@ export class AppController {
     };
   }
 
-  @Get('version')
-  getVersion(): VersionInfo {
-    const version = process.env.npm_package_version ?? 'unknown';
+  @Get('/db-check')
+  async dbCheck() {
+    try {
+      await this.prisma.$queryRawUnsafe('SELECT 1');
 
-    return { version };
+      return {
+        status: 'ok',
+        database: 'connected',
+      };
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error('Unknown error');
+
+      return {
+        status: 'error',
+        database: 'failed',
+        message: err.message,
+      };
+    }
   }
 }
