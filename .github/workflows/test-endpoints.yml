@@ -1,0 +1,20 @@
+name: Test Endpoints
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  check-endpoints:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probar /health
+        run: |
+          echo "Probando /health"
+          curl -i http://backend-nuevo-proyecto-production.up.railway.app/health
+
+      - name: Probar /api
+        run: |
+          echo "Probando /api"
+          curl -i http://backend-nuevo-proyecto-production.up.railway.app/api
