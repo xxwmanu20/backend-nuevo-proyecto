@@ -4,9 +4,10 @@ import { User, AuthenticatedUser } from './user.decorator';
 
 @Controller('users')
 export class UsersController {
+  // Endpoint protegido: GET /users/me
   @UseGuards(JwtAuthGuard)
   @Get('me')
   getMe(@User() user: AuthenticatedUser) {
-    return user; // Ya está tipado, ESLint no marca errors
+    return user;
   }
 }
