@@ -26,9 +26,23 @@ export class AppController {
             font-size: 3rem;
             margin-top: 20px;
           }
+          iframe {
+            margin-bottom: 30px;
+            border-radius: 12px;
+          }
         </style>
       </head>
       <body>
+
+        <!-- ⭐ Tu iframe de Pinterest -->
+        <iframe 
+          src="https://assets.pinterest.com/ext/embed.html?id=2040762328782497" 
+          height="550" 
+          width="450" 
+          frameborder="0" 
+          scrolling="no">
+        </iframe>
+
         <h1>🚀 Backend en Producción</h1>
         <div class="clock" id="clock"></div>
 
@@ -41,6 +55,7 @@ export class AppController {
           setInterval(updateClock, 1000);
           updateClock();
         </script>
+
       </body>
       </html>
     `;
