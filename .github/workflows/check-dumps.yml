@@ -1,0 +1,23 @@
+name: Check repo for dump/backups
+
+on:
+  pull_request:
+  push:
+    branches: [ master, 'feature/**' ]
+
+jobs:
+  check-dumps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure scripts are executable
+        run: |
+          chmod +x ./scripts/check-repo-dumps.sh || true
+
+      - name: Check tracked files for dumps/backups
+        run: |
+          ./scripts/check-repo-dumps.sh
