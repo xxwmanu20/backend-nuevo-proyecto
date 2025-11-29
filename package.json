@@ -20,6 +20,7 @@
     "test:unit": "jest --testPathPattern=src/.*\\.spec\\.ts",
     "test:e2e": "jest --runTestsByPath test/app.e2e-spec.ts"
   },
+  "prepare": "husky install",
   "dependencies": {
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.0.0",
@@ -61,7 +62,8 @@
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "husky": "^8.0.0"
   },
   "prisma": {
     "seed": "ts-node --transpile-only prisma/seed.ts"
