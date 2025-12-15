@@ -1,4 +1,4 @@
-import { PaymentStatus } from '@prisma/client';
+import { PaymentStatus } from '../../common/enums';
 
 export interface PaymentResponse {
   id: number;

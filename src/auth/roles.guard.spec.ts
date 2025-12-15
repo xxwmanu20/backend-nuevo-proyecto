@@ -1,6 +1,6 @@
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { UserRole } from '@prisma/client';
+import { UserRole } from '../common/enums';
 import { RolesGuard } from './roles.guard';
 
 const createContext = (user?: { role?: UserRole }): ExecutionContext => {

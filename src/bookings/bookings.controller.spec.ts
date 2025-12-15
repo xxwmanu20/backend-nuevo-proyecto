@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication, NotFoundException, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
-import { BookingStatus } from '@prisma/client';
+import { BookingStatus } from '../common/enums';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { BookingsController } from './bookings.controller';

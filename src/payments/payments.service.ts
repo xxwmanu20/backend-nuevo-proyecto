@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Booking, Payment, Prisma } from '@prisma/client';
+import { PaymentStatus } from '../common/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { PaymentResponse } from './dto/payment.response';
@@ -43,12 +44,17 @@ export class PaymentsService {
       bookingId: payment.bookingId,
       amount: payment.amount.toNumber(),
       currency: payment.currency,
-      status: payment.status,
+      status: this.normalizeStatus(payment.status),
       provider: payment.provider,
       providerPaymentId: payment.providerPaymentId ?? undefined,
       clientSecret: payment.clientSecret ?? undefined,
       createdAt: payment.createdAt,
       updatedAt: payment.updatedAt,
     };
+  }
+
+  private normalizeStatus(status: string): PaymentStatus {
+    const value = status as PaymentStatus;
+    return Object.values(PaymentStatus).includes(value) ? value : PaymentStatus.REQUIRES_CONFIRMATION;
   }
 }

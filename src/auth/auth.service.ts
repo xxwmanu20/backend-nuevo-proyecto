@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { UserRole } from '@prisma/client';
+import { UserRole } from '../common/enums';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { SignOptions, sign, verify } from 'jsonwebtoken';
@@ -49,7 +49,7 @@ export class AuthService {
     const sanitizedUser: AuthenticatedUser = {
       id: user.id,
       email: user.email,
-      role: user.role,
+      role: this.normalizeRole(user.role),
     };
 
     return this.buildAuthResult(sanitizedUser);
@@ -84,7 +84,7 @@ export class AuthService {
       },
     });
 
-    return this.buildAuthResult(created);
+    return this.buildAuthResult({ ...created, role: this.normalizeRole(created.role) });
   }
 
   async refresh(refreshToken: string): Promise<AuthResult> {
@@ -103,7 +103,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid token');
     }
 
-    return this.buildAuthResult(user);
+    return this.buildAuthResult({ ...user, role: this.normalizeRole(user.role) });
   }
 
   async requestPasswordReset(email: string): Promise<{ success: true; resetToken?: string }> {
@@ -154,7 +154,7 @@ export class AuthService {
       },
     });
 
-    return this.buildAuthResult(user);
+    return this.buildAuthResult({ ...user, role: this.normalizeRole(user.role) });
   }
 
   async hashPassword(password: string): Promise<string> {
@@ -204,7 +204,7 @@ export class AuthService {
     const payload: JwtTokenPayload = {
       sub: user.id.toString(),
       email: user.email,
-      role: user.role,
+      role: this.normalizeRole(user.role),
       userId: user.id,
       tokenType: 'refresh',
     };
@@ -224,7 +224,7 @@ export class AuthService {
     const payload: JwtTokenPayload = {
       sub: user.id.toString(),
       email: user.email,
-      role: user.role,
+      role: this.normalizeRole(user.role),
       userId: user.id,
       tokenType: 'password-reset',
     };
@@ -293,13 +293,19 @@ export class AuthService {
     return configured as SignOptions['expiresIn'];
   }
 
+  private normalizeRole(role: string): UserRole {
+    const value = role as UserRole;
+    return Object.values(UserRole).includes(value) ? value : UserRole.CUSTOMER;
+  }
+
   private buildAuthResult(user: AuthenticatedUser): AuthResult {
-    const accessToken = this.createAccessToken(user);
-    const refreshToken = this.createRefreshToken(user);
+    const normalizedUser: AuthenticatedUser = { ...user, role: this.normalizeRole(user.role) };
+    const accessToken = this.createAccessToken(normalizedUser);
+    const refreshToken = this.createRefreshToken(normalizedUser);
     return {
       accessToken,
       refreshToken,
-      user,
+      user: normalizedUser,
     };
   }
 

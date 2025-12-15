@@ -1,4 +1,12 @@
-import { Prisma, PrismaClient, UserRole, PaymentStatus, BookingStatus } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
+import { BookingStatus, PaymentStatus, UserRole } from '../src/common/enums';
+
+const ensureDatabaseUrl = (): string => {
+  const fallbackUrl = 'file:./dev.db';
+  const url = process.env.DATABASE_URL ?? fallbackUrl;
+  process.env.DATABASE_URL = url;
+  return url;
+};
 
 const daysFromNow = (days: number): Date => new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 
@@ -14,7 +22,8 @@ const logMessage = (silent: boolean, message: string): void => {
 
 export async function runSeed(prismaClient?: PrismaClient, options: SeedOptions = {}): Promise<void> {
   const { silent = false } = options;
-  const client = prismaClient ?? new PrismaClient();
+  const databaseUrl = ensureDatabaseUrl();
+  const client = prismaClient ?? new PrismaClient({ datasources: { db: { url: databaseUrl } } });
   const shouldDisconnect = !prismaClient;
 
   try {

@@ -2,7 +2,7 @@ import { registerAs } from '@nestjs/config';
 
 export const AppConfig = registerAs('app', () => ({
   port: parseInt(process.env.PORT ?? '8080', 10),
-  databaseUrl: process.env.DATABASE_URL ?? '',
+  databaseUrl: process.env.DATABASE_URL ?? 'file:./dev.db',
   redisUrl: process.env.REDIS_URL ?? '',
   jwt: {
     privateKey: process.env.JWT_PRIVATE_KEY ?? process.env.APP_JWT_PRIVATE_KEY ?? '',

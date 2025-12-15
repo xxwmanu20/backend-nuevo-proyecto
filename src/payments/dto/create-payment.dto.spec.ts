@@ -1,6 +1,6 @@
 import { plainToInstance } from 'class-transformer';
 import { validate, ValidationError } from 'class-validator';
-import { PaymentStatus } from '@prisma/client';
+import { PaymentStatus } from '../../common/enums';
 import { CreatePaymentDto } from './create-payment.dto';
 
 const buildDto = (override: Partial<CreatePaymentDto> = {}) =>
