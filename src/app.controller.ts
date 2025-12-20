@@ -25,8 +25,8 @@ export class AppController {
       dbStatus = "Error";
     }
 
-    // 🔽🔽🔽 PEGÁ ACÁ TU LINK REAL DEL APK 🔽🔽🔽
-    const APK_URL = "https://expo.dev/accounts/xxwmanu/projects/sudo/builds/168ad1eb-9f2b-4ac5-a572-24bcaab9c7c6";
+    const APK_URL =
+      "https://expo.dev/accounts/xxwmanu/projects/sudo/builds/168ad1eb-9f2b-4ac5-a572-24bcaab9c7c6";
 
     return `
 <!DOCTYPE html>
@@ -102,26 +102,6 @@ export class AppController {
 
     .label { color: #ccc; }
 
-    .clock-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 25px;
-    }
-
-    .clock {
-      font-size: 3rem;
-      font-weight: bold;
-      letter-spacing: 2px;
-    }
-
-    .tz {
-      font-size: 1.2rem;
-      color: #ccc;
-      margin-top: 5px;
-      letter-spacing: 2px;
-    }
-
     .btn {
       margin-top: 18px;
       padding: 12px 22px;
@@ -135,8 +115,15 @@ export class AppController {
       text-decoration: none;
     }
 
-    .btn:hover {
-      background: #00cc55;
+    .btn:hover { background: #00cc55; }
+
+    .desc {
+      margin-top: 16px;
+      max-width: 320px;
+      text-align: center;
+      color: #ccc;
+      font-size: 0.95rem;
+      line-height: 1.5;
     }
 
     .hint {
@@ -146,17 +133,34 @@ export class AppController {
       text-align: center;
       max-width: 300px;
     }
+
+    .clock-container {
+      margin-top: 25px;
+      text-align: center;
+    }
+
+    .clock {
+      font-size: 3rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+
+    .tz {
+      font-size: 1.2rem;
+      color: #ccc;
+      margin-top: 5px;
+    }
   </style>
 </head>
 
 <body>
 
-  <iframe 
-    src=<iframe src="https://assets.pinterest.com/ext/embed.html?id=838725130646835032" 
-    height="714" 
+  <iframe
+    src="https://assets.pinterest.com/ext/embed.html?id=838725130646835032"
+    height="714"
     width="345"
-    frameborder="0" 
-    scrolling="no" >
+    frameborder="0"
+    scrolling="no">
   </iframe>
 
   <h1>🚀 Backend en Producción</h1>
@@ -170,8 +174,12 @@ export class AppController {
     <div><span class="label">Base de Datos:</span> ${dbStatus}</div>
   </div>
 
-  <!-- 🔽 DESCARGA APK -->
   <a class="btn" href="${APK_URL}" download>⬇ Descargar APK (Android)</a>
+
+  <div class="desc">
+    SUDO es un chat efímero y directo, sin cuentas ni historial.<br/>
+    Conversaciones temporales que desaparecen automáticamente.
+  </div>
 
   <div class="hint">
     Android puede pedir permiso para instalar apps desconocidas.<br/>
