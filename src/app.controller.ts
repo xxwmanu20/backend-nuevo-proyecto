@@ -26,7 +26,7 @@ export class AppController {
     }
 
     // 🔽🔽🔽 PEGÁ ACÁ TU LINK REAL DEL APK 🔽🔽🔽
-    const APK_URL = "PEGAR_ACA_TU_LINK_DEL_APK";
+    const APK_URL = "https://expo.dev/accounts/xxwmanu/projects/sudo/builds/168ad1eb-9f2b-4ac5-a572-24bcaab9c7c6";
 
     return `
 <!DOCTYPE html>
@@ -152,7 +152,7 @@ export class AppController {
 <body>
 
   <iframe 
-    src="https://assets.pinterest.com/ext/embed.html?id=2040762328782497"
+    src="https://expo.dev/accounts/xxwmanu/projects/sudo/builds/168ad1eb-9f2b-4ac5-a572-24bcaab9c7c6"
     height="550"
     width="450"
     frameborder="0"
