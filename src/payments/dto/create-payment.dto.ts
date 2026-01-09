@@ -1,4 +1,4 @@
-import { PaymentStatus } from '@prisma/client';
+import { PaymentStatus } from '../../common/enums';
 import { Transform } from 'class-transformer';
 import {
   IsEnum,

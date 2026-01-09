@@ -8,7 +8,7 @@ import { AuthController } from '../../src/auth/auth.controller';
 import { AuthService } from '../../src/auth/auth.service';
 import { JwtKeyService } from '../../src/auth/jwt-key.service';
 import { PrismaService } from '../../src/prisma/prisma.service';
-import { UserRole } from '@prisma/client';
+import { UserRole } from '../../src/common/enums';
 
 const assertSuccessResponse = (value: unknown): { success: true; resetToken?: string } => {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {

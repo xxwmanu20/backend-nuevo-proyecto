@@ -3,28 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-}
-
-enum UserRole {
-  CUSTOMER
-  PROFESSIONAL
-  ADMIN
-}
-
-enum BookingStatus {
-  PENDING
-  CONFIRMED
-  COMPLETED
-  CANCELLED
-}
-
-enum PaymentStatus {
-  REQUIRES_CONFIRMATION
-  SUCCEEDED
-  FAILED
-  REFUNDED
 }
 
 model User {
@@ -32,7 +12,7 @@ model User {
   email                String           @unique
   passwordHash         String
   passwordSaltRounds   Int              @default(10)
-  role                 UserRole         @default(CUSTOMER)
+  role                 String           @default("CUSTOMER")
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
   customerProfile      Customer?
@@ -51,8 +31,8 @@ model Professional {
   id          Int               @id @default(autoincrement())
   userId      Int               @unique
   bio         String?
-  hourlyRate  Decimal?          @db.Decimal(10, 2)
-  rating      Decimal?          @db.Decimal(3, 2)
+  hourlyRate  Decimal?
+  rating      Decimal?
   user        User              @relation(fields: [userId], references: [id])
   bookings    Booking[]         @relation("BookingProfessional")
   offerings   ServiceOffering[]
@@ -69,7 +49,7 @@ model Service {
   id          Int              @id @default(autoincrement())
   name        String
   description String?
-  basePrice   Decimal          @db.Decimal(10, 2)
+  basePrice   Decimal
   categoryId  Int
   category    ServiceCategory  @relation(fields: [categoryId], references: [id])
   bookings    Booking[]
@@ -80,7 +60,7 @@ model ServiceOffering {
   id             Int           @id @default(autoincrement())
   professionalId Int
   serviceId      Int
-  price          Decimal       @db.Decimal(10, 2)
+  price          Decimal
   isActive       Boolean       @default(true)
   professional   Professional  @relation(fields: [professionalId], references: [id])
   service        Service       @relation(fields: [serviceId], references: [id])
@@ -92,7 +72,7 @@ model Booking {
   professionalId   Int?
   serviceId        Int
   scheduledAt      DateTime
-  status           BookingStatus  @default(PENDING)
+  status           String         @default("PENDING")
   notes            String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
@@ -105,9 +85,9 @@ model Booking {
 model Payment {
   id                Int            @id @default(autoincrement())
   bookingId         Int
-  amount            Decimal        @db.Decimal(10, 2)
+  amount            Decimal
   currency          String
-  status            PaymentStatus  @default(REQUIRES_CONFIRMATION)
+  status            String         @default("REQUIRES_CONFIRMATION")
   provider          String
   providerPaymentId String?
   clientSecret      String?

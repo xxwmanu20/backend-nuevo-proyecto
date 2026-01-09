@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Booking as BookingModel, Prisma, Service as ServiceModel } from '@prisma/client';
+import { BookingStatus } from '../common/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -60,7 +61,7 @@ export class BookingsService {
   private mapBooking(booking: BookingModel & { service: ServiceModel }): BookingResponse {
     return {
       id: booking.id,
-      status: booking.status,
+      status: this.normalizeStatus(booking.status),
       scheduledAt: booking.scheduledAt,
       service: {
         id: booking.service.id,
@@ -68,5 +69,10 @@ export class BookingsService {
         description: booking.service.description ?? undefined,
       },
     };
+  }
+
+  private normalizeStatus(status: string): BookingStatus {
+    const value = status as BookingStatus;
+    return Object.values(BookingStatus).includes(value) ? value : BookingStatus.PENDING;
   }
 }

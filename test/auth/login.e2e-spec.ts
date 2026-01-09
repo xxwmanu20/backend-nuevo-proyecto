@@ -5,7 +5,7 @@ import { generateKeyPairSync } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import * as request from 'supertest';
-import { UserRole } from '@prisma/client';
+import { UserRole } from '../../src/common/enums';
 import { AuthController } from '../../src/auth/auth.controller';
 import { AuthService } from '../../src/auth/auth.service';
 import { JwtKeyService } from '../../src/auth/jwt-key.service';

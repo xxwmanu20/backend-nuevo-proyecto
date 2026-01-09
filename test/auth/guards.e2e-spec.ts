@@ -6,7 +6,7 @@ import { Reflector } from '@nestjs/core';
 import { generateKeyPairSync } from 'crypto';
 import { sign, SignOptions } from 'jsonwebtoken';
 import * as request from 'supertest';
-import { UserRole } from '@prisma/client';
+import { UserRole } from '../../src/common/enums';
 import { JwtAuthGuard } from '../../src/auth/jwt-auth.guard';
 import { JwtKeyService } from '../../src/auth/jwt-key.service';
 import { JwtStrategy } from '../../src/auth/jwt.strategy';

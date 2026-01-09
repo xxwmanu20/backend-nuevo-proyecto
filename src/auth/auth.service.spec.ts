@@ -7,7 +7,7 @@ import * as jwt from 'jsonwebtoken';
 import { AuthService } from './auth.service';
 import { JwtKeyService } from './jwt-key.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { UserRole } from '@prisma/client';
+import { UserRole } from '../common/enums';
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn((plain: string, rounds: number) =>
