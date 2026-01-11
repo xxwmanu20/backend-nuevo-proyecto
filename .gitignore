@@ -4,3 +4,5 @@ dist/
 .prisma/
 .DS_Store
 coverage/
+*.bak
+*.dump

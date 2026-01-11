@@ -1,0 +1,48 @@
+name: Run production upsert (manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  prod-upsert:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      - name: Install postgresql client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Production - Backup and upsert (manual)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_PROD }}
+          PGPASSWORD: ${{ secrets.DATABASE_PASSWORD_PROD }}
+        run: |
+          # Backup important table (User). Requires psql/pg_dump and correct DATABASE_URL_PROD secret.
+          # The DATABASE_URL_PROD is expected in the format: postgresql://user:password@host:port/dbname
+          echo "Creating full DB dump (railway_pre_upsert.dump)"
+          pg_dump --format=custom --file=railway_pre_upsert.dump ${{ secrets.DATABASE_URL_PROD }}
+          echo "Uploading artifact"
+          tar czf railway_pre_upsert.dump.tgz railway_pre_upsert.dump
+          ls -al
+          # Run the safe upsert script
+          npx ts-node prisma/create_test_user.ts
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: railway_pre_upsert
+          path: railway_pre_upsert.dump.tgz

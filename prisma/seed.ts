@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient, UserRole, PaymentStatus, BookingStatus } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const daysFromNow = (days: number): Date => new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 
@@ -83,6 +84,8 @@ export async function runSeed(prismaClient?: PrismaClient, options: SeedOptions 
         serviceByName.set(service.name, service.id);
       }
     }
+
+    const hashedTestPassword = await bcrypt.hash('Test1234', 10);
 
     const customerUsers = await Promise.all([
       client.user.create({
@@ -192,6 +195,20 @@ export async function runSeed(prismaClient?: PrismaClient, options: SeedOptions 
         email: 'admin@example.com',
         passwordHash: 'hashed-password',
         role: UserRole.ADMIN
+      }
+    });
+
+    // Usuario de prueba para login con contraseña Test1234
+    await client.user.create({
+      data: {
+        email: 'prueba@example.com',
+        passwordHash: hashedTestPassword,
+        role: UserRole.CUSTOMER,
+        customerProfile: {
+          create: {
+            phone: '+521555000000'
+          }
+        }
       }
     });
 
