@@ -122,6 +122,7 @@ export class AuthService {
 
     const resetToken = this.createPasswordResetToken(user);
 
+    // TEMPORAL: incluir el token en la respuesta para pruebas
     return {
       success: true,
       resetToken,

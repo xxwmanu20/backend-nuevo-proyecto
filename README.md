@@ -1,3 +1,17 @@
+# Crear usuario de prueba
+
+Puedes crear un usuario de prueba usando el endpoint POST /auth/register:
+
+Ejemplo de petición (JSON):
+
+POST https://backend-nuevo-proyecto-production.up.railway.app/auth/register
+{
+   "email": "usuario@correo.com",
+   "password": "tu_contraseña",
+   "name": "Usuario Prueba"
+}
+
+Luego, usa el endpoint /auth/login para obtener el token JWT y probar los endpoints protegidos.
 # Backend Nuevo Proyecto
 
 Esqueleto inicial del backend construido con NestJS y Prisma.

@@ -1,7 +1,11 @@
 import { registerAs } from '@nestjs/config';
 
 export const AppConfig = registerAs('app', () => ({
+<<<<<<< HEAD
   port: parseInt(process.env.PORT ?? '8080', 10),
+=======
+  port: parseInt(caprocess.env.PORT ?? '8080', 10),
+>>>>>>> 0f275d1 (feat: mostrar resetToken en respuesta de /auth/password/forgot para pruebas)
   databaseUrl: process.env.DATABASE_URL ?? '',
   redisUrl: process.env.REDIS_URL ?? '',
   jwt: {

@@ -24,6 +24,9 @@ export class JwtKeyService {
   }
 
   getPublicKey(): string {
+    // Log temporal para depuración
+    const rawValue = this.configService.get<string>('app.jwt.publicKey');
+    console.log('Valor JWT_PUBLIC_KEY desde config:', rawValue);
     return this.getKey(
       'public',
       'app.jwt.publicKey',
